@@ -100,8 +100,16 @@ export async function lockSlot(
   slotTime: string,
   patientProfileId: string
 ): Promise<boolean> {
-  const redis = await getRedis();
-  const key = `lock:${doctorId}:${format(date, 'yyyy-MM-dd')}:${slotTime}:${patientProfileId}`;
+  // Key must be per-slot (not per-patient), otherwise multiple users can "lock" the same slot.
+  const key = `lock:${doctorId}:${format(date, 'yyyy-MM-dd')}:${slotTime}`;
+
+  let redis: Awaited<ReturnType<typeof getRedis>> | null = null;
+  try {
+    redis = await getRedis();
+  } catch {
+    // If Redis is unavailable (common in local dev), don't block bookings.
+    return true;
+  }
 
   const existingLock = await redis.get(key);
   if (existingLock && existingLock !== patientProfileId) {
@@ -121,9 +129,16 @@ export async function releaseSlotLock(
   slotTime: string,
   patientProfileId: string
 ): Promise<void> {
-  const redis = await getRedis();
-  const key = `lock:${doctorId}:${format(date, 'yyyy-MM-dd')}:${slotTime}:${patientProfileId}`;
-  await redis.del(key);
+  const key = `lock:${doctorId}:${format(date, 'yyyy-MM-dd')}:${slotTime}`;
+  try {
+    const redis = await getRedis();
+    const existingLock = await redis.get(key);
+    if (existingLock === patientProfileId) {
+      await redis.del(key);
+    }
+  } catch {
+    // ignore when redis unavailable
+  }
 }
 
 /**
@@ -135,10 +150,15 @@ export async function isSlotLocked(
   slotTime: string,
   patientProfileId: string
 ): Promise<boolean> {
-  const redis = await getRedis();
-  const key = `lock:${doctorId}:${format(date, 'yyyy-MM-dd')}:${slotTime}:${patientProfileId}`;
-  const lock = await redis.get(key);
-  return lock !== null && lock !== patientProfileId;
+  const key = `lock:${doctorId}:${format(date, 'yyyy-MM-dd')}:${slotTime}`;
+  try {
+    const redis = await getRedis();
+    const lock = await redis.get(key);
+    return lock !== null && lock !== patientProfileId;
+  } catch {
+    // If redis is down, treat as "not locked" (avoid blocking UI)
+    return false;
+  }
 }
 
 /**

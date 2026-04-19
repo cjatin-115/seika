@@ -5,6 +5,9 @@ import { useState, useEffect } from 'react';
 import { colors, DEPARTMENTS } from '@/lib/constants';
 import Link from 'next/link';
 import { MapPin, Star, Clock, Search } from 'lucide-react';
+import Card from '@/components/shared/Card';
+import PrimaryButton from '@/components/shared/PrimaryButton';
+import SectionHeader from '@/components/shared/SectionHeader';
 
 export default function HomePage() {
   const { data: session } = useSession();
@@ -31,22 +34,17 @@ export default function HomePage() {
   return (
     <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto">
       {/* Welcome Section */}
-      <div className="mb-8">
-        <h1
-          style={{ color: colors.textPrimary, fontFamily: '"Noto Serif JP", serif' }}
-          className="text-3xl mb-2"
-        >
-          Welcome, {session?.user?.name?.split(' ')[0]}!
-        </h1>
-        <p style={{ color: colors.textSecondary }} className="text-lg">
-          Ready to book your next appointment?
-        </p>
-      </div>
+      <Card className="mb-8 p-5 md:p-6 rounded-xl">
+        <SectionHeader
+          title={`Welcome, ${session?.user?.name?.split(' ')[0]}!`}
+          subtitle="Ready to book your next appointment?"
+        />
+      </Card>
 
       {/* Search Bar */}
       <div className="mb-8">
         <div
-          className="relative px-4 py-3 rounded-lg border flex items-center gap-3"
+          className="relative px-4 py-3.5 rounded-xl border flex items-center gap-3 soft-card"
           style={{ backgroundColor: colors.surface, borderColor: colors.border }}
         >
           <Search size={20} style={{ color: colors.textSecondary }} />
@@ -84,8 +82,8 @@ export default function HomePage() {
           {DEPARTMENTS.map((dept) => (
             <Link
               key={dept.name}
-              href={`/search?specialty=${encodeURIComponent(dept.name)}`}
-              className="p-4 rounded-lg text-center text-sm transition-colors"
+              href={`/patient/search?specialty=${encodeURIComponent(dept.name)}`}
+              className="p-4 rounded-xl text-center text-sm transition-all hover:-translate-y-0.5"
               style={{
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
@@ -100,8 +98,8 @@ export default function HomePage() {
       </div>
 
       {/* Call to Action */}
-      <div
-        className="p-6 rounded-lg text-center"
+      <Card
+        className="p-6 rounded-xl text-center"
         style={{
           backgroundColor: colors.surface,
           border: `1px solid ${colors.border}`,
@@ -117,26 +115,18 @@ export default function HomePage() {
         <p style={{ color: colors.textSecondary }} className="text-sm mb-4">
           Browse our network of hospitals and doctors
         </p>
-        <Link
-          href="/search"
-          className="inline-block px-6 py-3 rounded-md font-medium transition-all hover:opacity-90"
-          style={{
-            backgroundColor: colors.accentCherry,
-            color: 'white',
-            border: `1px solid ${colors.accentCherry}`,
-          }}
-        >
-          Book Now
+        <Link href="/patient/search">
+          <PrimaryButton>Book Now</PrimaryButton>
         </Link>
-      </div>
+      </Card>
     </div>
   );
 }
 
 function AppointmentCard({ appointment }: { appointment: any }) {
   return (
-    <div
-      className="p-6 rounded-lg border"
+    <Card
+      className="p-6 rounded-xl border"
       style={{
         backgroundColor: colors.surface,
         borderColor: colors.border,
@@ -177,13 +167,13 @@ function AppointmentCard({ appointment }: { appointment: any }) {
 
       <div className="mt-4 pt-4 border-t" style={{ borderColor: colors.border }}>
         <Link
-          href={`/appointments/${appointment.id}`}
+          href="/patient/appointments"
           className="text-sm font-medium transition-colors"
           style={{ color: colors.accentCherry }}
         >
-          View Details →
+          View Appointments →
         </Link>
       </div>
-    </div>
+    </Card>
   );
 }

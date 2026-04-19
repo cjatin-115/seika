@@ -32,6 +32,7 @@ interface DoctorDetails {
 
 interface TimeSlot {
   time: string;
+  endTime: string;
   available: boolean;
 }
 
@@ -58,6 +59,7 @@ export default function DoctorDetailPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showDoctorInfo, setShowDoctorInfo] = useState(false);
+  const isDev = process.env.NODE_ENV !== 'production';
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -125,6 +127,15 @@ export default function DoctorDetailPage() {
   }, [selectedDate]);
 
   const handleBookAppointment = async () => {
+    if (isDev) {
+      // eslint-disable-next-line no-console
+      console.log('[booking] click', {
+        selectedProfile,
+        selectedDate,
+        selectedSlot,
+        slotsCount: slots.length,
+      });
+    }
     if (!selectedProfile || !selectedDate || !selectedSlot) {
       setError('Please select profile, date, and time slot');
       return;
@@ -135,33 +146,55 @@ export default function DoctorDetailPage() {
     setSuccess('');
 
     try {
-      const appointmentDate = new Date(selectedDate);
-      const [hours, minutes] = selectedSlot.split(':');
-      appointmentDate.setHours(parseInt(hours), parseInt(minutes));
+      const selectedSlotData = slots.find((slot) => slot.time === selectedSlot);
+      if (!selectedSlotData?.endTime) {
+        setError('Invalid slot selected. Please choose another time.');
+        setBookingLoading(false);
+        return;
+      }
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      if (isDev) {
+        // eslint-disable-next-line no-console
+        console.log('[booking] posting /api/appointments');
+      }
       const res = await fetch('/api/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           patientProfileId: selectedProfile,
           doctorId,
-          appointmentDate: appointmentDate.toISOString(),
+          appointmentDate: selectedDate,
           slotTime: selectedSlot,
+          slotEndTime: selectedSlotData.endTime,
           reason,
         }),
-      });
+      }).finally(() => clearTimeout(timeoutId));
 
       if (res.ok) {
         setSuccess('Appointment booked successfully!');
         setTimeout(() => {
-          router.push('/appointments');
-        }, 1500);
+          router.replace('/patient/home');
+        }, 800);
       } else {
-        const data = await res.json();
-        setError(data.message || 'Failed to book appointment');
+        let message = 'Failed to book appointment';
+        try {
+          const data = await res.json();
+          message = data?.message || data?.error?.message || message;
+        } catch {
+          // ignore JSON parse errors
+        }
+        setError(message);
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Booking took too long (timeout). Please try again.');
+      } else {
+        setError('An error occurred. Please try again.');
+      }
     } finally {
       setBookingLoading(false);
     }
@@ -184,7 +217,7 @@ export default function DoctorDetailPage() {
   if (!doctor) {
     return (
       <div className="px-4 py-6 md:px-8 md:py-8 max-w-4xl mx-auto">
-        <Link href="/search" className="flex items-center gap-2 mb-6">
+        <Link href="/patient/search" className="flex items-center gap-2 mb-6">
           <ArrowLeft size={20} style={{ color: colors.accentCherry }} />
           <span style={{ color: colors.accentCherry }}>Back to Search</span>
         </Link>
@@ -201,7 +234,7 @@ export default function DoctorDetailPage() {
   return (
     <div className="px-4 py-6 md:px-8 md:py-8 max-w-3xl mx-auto">
       {/* Back Button */}
-      <Link href="/search" className="flex items-center gap-2 mb-6">
+      <Link href="/patient/search" className="flex items-center gap-2 mb-6">
         <ArrowLeft size={20} style={{ color: colors.accentCherry }} />
         <span style={{ color: colors.accentCherry }}>Back to Search</span>
       </Link>
@@ -368,6 +401,16 @@ export default function DoctorDetailPage() {
         <h2 style={{ color: colors.textPrimary }} className="text-2xl font-semibold mb-6">
           Book Appointment
         </h2>
+
+        {isDev && (
+          <div
+            className="p-3 rounded-lg mb-4 text-xs"
+            style={{ backgroundColor: '#eef2ff', color: '#3730a3' }}
+          >
+            Debug: profile={selectedProfile || '∅'} date={selectedDate || '∅'} slot=
+            {selectedSlot || '∅'} slots={slots.length} loading={String(bookingLoading)}
+          </div>
+        )}
 
         {error && (
           <div

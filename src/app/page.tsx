@@ -4,7 +4,7 @@ import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { colors } from '@/lib/constants';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ShieldCheck, Clock3, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function LandingPage() {
@@ -109,10 +109,10 @@ export default function LandingPage() {
             style={{
               color: colors.textPrimary,
               fontFamily: '"Noto Serif JP", serif',
-              fontSize: '2.5rem',
+              fontSize: '2.75rem',
               lineHeight: '1.2',
             }}
-            className="mb-4"
+            className="mb-4 text-balance"
           >
             予約を、もっと簡単に
           </h1>
@@ -126,20 +126,20 @@ export default function LandingPage() {
 
           <p
             style={{ color: colors.textSecondary, lineHeight: '1.8' }}
-            className="mb-12 max-w-xl mx-auto text-lg"
+            className="mb-12 max-w-xl mx-auto text-lg text-balance"
           >
             Schedule doctor appointments with ease. Find hospitals and clinics near you,
             book online, and receive instant confirmations.
           </p>
 
           {/* Features */}
-          <div className="grid md:grid-cols-3 gap-8 mb-12 max-w-xl mx-auto">
-            <div className="text-center">
+          <div className="grid md:grid-cols-3 gap-4 mb-12 max-w-3xl mx-auto">
+            <div className="text-center soft-card p-5">
               <div
                 className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center"
                 style={{ backgroundColor: colors.surface }}
               >
-                <span style={{ color: colors.accentCherry }}>✓</span>
+                <Sparkles size={18} style={{ color: colors.accentCherry }} />
               </div>
               <p
                 style={{ color: colors.textSecondary, fontSize: '0.95rem' }}
@@ -148,12 +148,12 @@ export default function LandingPage() {
                 Easy to use interface
               </p>
             </div>
-            <div className="text-center">
+            <div className="text-center soft-card p-5">
               <div
                 className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center"
                 style={{ backgroundColor: colors.surface }}
               >
-                <span style={{ color: colors.accentCherry }}>✓</span>
+                <Clock3 size={18} style={{ color: colors.accentCherry }} />
               </div>
               <p
                 style={{ color: colors.textSecondary, fontSize: '0.95rem' }}
@@ -162,12 +162,12 @@ export default function LandingPage() {
                 Real-time availability
               </p>
             </div>
-            <div className="text-center">
+            <div className="text-center soft-card p-5">
               <div
                 className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center"
                 style={{ backgroundColor: colors.surface }}
               >
-                <span style={{ color: colors.accentCherry }}>✓</span>
+                <ShieldCheck size={18} style={{ color: colors.accentCherry }} />
               </div>
               <p
                 style={{ color: colors.textSecondary, fontSize: '0.95rem' }}
@@ -182,7 +182,7 @@ export default function LandingPage() {
           <button
             onClick={() => router.push('/auth')}
             disabled={status === 'loading'}
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-md font-medium transition-all hover:opacity-90 active:scale-95 cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-medium transition-all hover:opacity-90 hover:-translate-y-0.5 active:scale-95 cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
             style={{
               backgroundColor: colors.accentCherry,
               color: 'white',

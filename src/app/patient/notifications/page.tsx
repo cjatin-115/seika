@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { colors } from '@/lib/constants';
 import { Trash2, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import Card from '@/components/shared/Card';
+import PrimaryButton from '@/components/shared/PrimaryButton';
+import SectionHeader from '@/components/shared/SectionHeader';
 
 interface Notification {
   id: string;
@@ -90,66 +93,48 @@ export default function NotificationsPage() {
 
   return (
     <div className="px-4 py-6 md:px-8 md:py-8 max-w-4xl mx-auto">
-      <h1
-        style={{ color: colors.textPrimary, fontFamily: '"Noto Serif JP", serif' }}
-        className="text-3xl mb-6"
-      >
-        Notifications
-      </h1>
+      <SectionHeader title="Notifications" subtitle="Stay updated on appointments and reminders" />
 
       {/* Filter Tabs */}
       <div className="flex gap-2 mb-6">
-        <button
+        <PrimaryButton
           onClick={() => setFilter('all')}
-          className="px-4 py-2 rounded-md text-sm font-medium transition-all"
-          style={{
-            backgroundColor: filter === 'all' ? colors.accentCherry : colors.surface,
-            color: filter === 'all' ? 'white' : colors.textSecondary,
-            border: `1px solid ${colors.border}`,
-          }}
+          variant={filter === 'all' ? 'primary' : 'secondary'}
         >
           All ({notifications.length})
-        </button>
-        <button
+        </PrimaryButton>
+        <PrimaryButton
           onClick={() => setFilter('unread')}
-          className="px-4 py-2 rounded-md text-sm font-medium transition-all"
-          style={{
-            backgroundColor: filter === 'unread' ? colors.accentCherry : colors.surface,
-            color: filter === 'unread' ? 'white' : colors.textSecondary,
-            border: `1px solid ${colors.border}`,
-          }}
+          variant={filter === 'unread' ? 'primary' : 'secondary'}
         >
           Unread ({notifications.filter((n) => !n.read).length})
-        </button>
+        </PrimaryButton>
       </div>
 
       {/* Notifications List */}
       {loading ? (
-        <div className="text-center py-12">
+        <Card className="text-center py-12 rounded-xl">
           <div
             className="w-12 h-12 border-4 border-transparent rounded-full animate-spin mx-auto mb-4"
             style={{ borderTopColor: colors.accentCherry }}
           ></div>
           <p style={{ color: colors.textSecondary }}>Loading notifications...</p>
-        </div>
+        </Card>
       ) : filteredNotifications.length === 0 ? (
-        <div
-          className="text-center py-12 rounded-lg"
-          style={{ backgroundColor: colors.surface }}
-        >
+        <Card className="text-center py-12 rounded-xl">
           <p style={{ color: colors.textSecondary }}>
             {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
           </p>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-3">
           {filteredNotifications.map((notification) => {
             const { icon: Icon, color } = getIconAndColor(notification.type);
             return (
-              <div
+              <Card
                 key={notification.id}
                 onClick={() => !notification.read && markAsRead(notification.id)}
-                className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                className={`p-4 rounded-xl border transition-all cursor-pointer ${
                   !notification.read ? 'border-blue-200' : ''
                 }`}
                 style={{
@@ -186,21 +171,18 @@ export default function NotificationsPage() {
                     </p>
                   </div>
 
-                  <button
+                  <PrimaryButton
                     onClick={(e) => {
                       e.stopPropagation();
                       deleteNotification(notification.id);
                     }}
-                    className="p-2 rounded-md transition-all flex-shrink-0"
-                    style={{
-                      backgroundColor: colors.surface,
-                      color: '#ef4444',
-                    }}
+                    variant="secondary"
+                    className="h-9 w-9 min-h-0 rounded-lg p-0 flex-shrink-0"
                   >
                     <Trash2 size={16} />
-                  </button>
+                  </PrimaryButton>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>

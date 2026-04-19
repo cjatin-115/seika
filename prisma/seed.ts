@@ -1,8 +1,72 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
 import { addDays, format } from 'date-fns';
 
+function loadEnvFile(filePath: string) {
+  if (!fs.existsSync(filePath)) return;
+
+  const raw = fs.readFileSync(filePath, 'utf8');
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+
+    const withoutExport = trimmed.startsWith('export ')
+      ? trimmed.slice('export '.length).trim()
+      : trimmed;
+
+    const eq = withoutExport.indexOf('=');
+    if (eq <= 0) continue;
+
+    const key = withoutExport.slice(0, eq).trim();
+    let value = withoutExport.slice(eq + 1).trim();
+
+    // Strip surrounding quotes
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    // Don't override explicitly provided env vars
+    if (process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
+
+// Prisma CLI seeding does not load Next.js `.env.local` automatically.
+// Load `.env.local` first (dev), then `.env` (optional), from the project root.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, '..');
+loadEnvFile(path.join(projectRoot, '.env.local'));
+loadEnvFile(path.join(projectRoot, '.env'));
+
 const prisma = new PrismaClient();
+
+const SEED_PASSWORD = 'Medibook123!';
+
+async function upsertCredentialsAccount(userId: string, password: string) {
+  const hashedPassword = await hash(password, 12);
+
+  await prisma.account.deleteMany({
+    where: { userId, provider: 'credentials' },
+  });
+
+  await prisma.account.create({
+    data: {
+      userId,
+      type: 'credentials',
+      provider: 'credentials',
+      providerAccountId: hashedPassword,
+    },
+  });
+}
 
 async function main() {
   console.log('🌱 Starting database seed...');
@@ -34,6 +98,7 @@ async function main() {
       emailVerified: new Date(),
     },
   });
+  await upsertCredentialsAccount(superAdminUser.id, SEED_PASSWORD);
 
   // Create Patient Users
   const patient1 = await prisma.user.create({
@@ -44,6 +109,7 @@ async function main() {
       emailVerified: new Date(),
     },
   });
+  await upsertCredentialsAccount(patient1.id, SEED_PASSWORD);
 
   const patient2 = await prisma.user.create({
     data: {
@@ -53,6 +119,7 @@ async function main() {
       emailVerified: new Date(),
     },
   });
+  await upsertCredentialsAccount(patient2.id, SEED_PASSWORD);
 
   console.log('✓ Created patient users');
 
@@ -110,6 +177,7 @@ async function main() {
       emailVerified: new Date(),
     },
   });
+  await upsertCredentialsAccount(hospitalAdmin1.id, SEED_PASSWORD);
 
   const hospital1 = await prisma.hospital.create({
     data: {
@@ -141,6 +209,7 @@ async function main() {
       emailVerified: new Date(),
     },
   });
+  await upsertCredentialsAccount(hospitalAdmin2.id, SEED_PASSWORD);
 
   const hospital2 = await prisma.hospital.create({
     data: {
@@ -172,6 +241,7 @@ async function main() {
       emailVerified: new Date(),
     },
   });
+  await upsertCredentialsAccount(hospitalAdmin3.id, SEED_PASSWORD);
 
   const hospital3 = await prisma.hospital.create({
     data: {
@@ -199,7 +269,7 @@ async function main() {
 
   // Create Departments
   const departments = [
-    { name: 'General Medicine', iconSlug: 'stethoscope' },
+    { name: 'General Practice', iconSlug: 'stethoscope' },
     { name: 'Cardiology', iconSlug: 'heart' },
     { name: 'Dermatology', iconSlug: 'skin' },
     { name: 'Orthopedics', iconSlug: 'bone' },
@@ -383,9 +453,12 @@ async function main() {
   - Reviews: 3
   
 🧪 Test Credentials:
-  Super Admin: admin@medibook.com
-  Patient 1: patient1@example.com (profiles: Raj Kumar, Anjali Kumar)
-  Patient 2: patient2@example.com
+  Super Admin: admin@medibook.com / ${SEED_PASSWORD}
+  Patient 1: patient1@example.com / ${SEED_PASSWORD} (profiles: Raj Kumar, Anjali Kumar)
+  Patient 2: patient2@example.com / ${SEED_PASSWORD}
+  Hospital Admin (Lilavati): admin@lilavati.in / ${SEED_PASSWORD}
+  Hospital Admin (Kokilaben): admin@kokilaben.in / ${SEED_PASSWORD}
+  Hospital Admin (Bombay): admin@bombayhospital.in / ${SEED_PASSWORD}
   `);
 }
 

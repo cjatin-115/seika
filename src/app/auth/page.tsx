@@ -39,16 +39,26 @@ export default function AuthPage() {
 
     try {
       console.log('Attempting sign in with email:', email);
-      // Let NextAuth handle the redirect based on user role
-      const res = await signIn('credentials', {
+      const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
+        callbackUrl: '/auth/callback',
       });
-      if (res?.error) {
-        setError('Authentication failed. Please check your credentials.');
+
+      if (!result || (result as any).error) {
+        const raw = typeof (result as any)?.error === 'string' ? ((result as any).error as string) : '';
+        const errMsg =
+          raw && raw !== 'CredentialsSignin'
+            ? raw
+            : 'Invalid email or password';
+        setError(errMsg);
         setLoading(false);
+        return;
       }
+
+      // Hard navigation ensures server components (like /auth/callback) see the session cookie immediately.
+      window.location.assign('/auth/callback');
     } catch (err) {
       console.error('Sign in exception:', err);
       setError('Authentication failed. Please try again.');
@@ -109,7 +119,7 @@ export default function AuthPage() {
       // Let NextAuth handle the redirect automatically
       await signIn('google', {
         redirect: true,
-        callbackUrl: '/',
+        callbackUrl: '/auth/callback',
       });
     } catch (err) {
       console.error('Google sign in exception:', err);
@@ -149,7 +159,16 @@ export default function AuthPage() {
 
       {/* Auth Container */}
       <main className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md soft-card p-6 md:p-8">
+          <div className="mb-6">
+            <h1 style={{ color: colors.textPrimary }} className="text-2xl font-serif text-center">
+              Welcome Back
+            </h1>
+            <p style={{ color: colors.textSecondary }} className="text-sm text-center mt-2">
+              Sign in to manage appointments and health records
+            </p>
+          </div>
+
           {/* Tabs */}
           <div className="flex gap-4 mb-8">
             <button
@@ -158,7 +177,7 @@ export default function AuthPage() {
                 setError(null);
                 setSuccess(null);
               }}
-              className="flex-1 py-3 rounded-md font-medium transition-all active:scale-95 cursor-pointer hover:opacity-90"
+              className="flex-1 py-3 rounded-lg font-medium transition-all active:scale-95 cursor-pointer hover:opacity-90"
               style={{
                 backgroundColor: mode === 'signin' ? colors.accentCherry : colors.surface,
                 color: mode === 'signin' ? 'white' : colors.textPrimary,
@@ -174,7 +193,7 @@ export default function AuthPage() {
                 setError(null);
                 setSuccess(null);
               }}
-              className="flex-1 py-3 rounded-md font-medium transition-all active:scale-95 cursor-pointer hover:opacity-90"
+              className="flex-1 py-3 rounded-lg font-medium transition-all active:scale-95 cursor-pointer hover:opacity-90"
               style={{
                 backgroundColor: mode === 'signup' ? colors.accentCherry : colors.surface,
                 color: mode === 'signup' ? 'white' : colors.textPrimary,
@@ -189,7 +208,7 @@ export default function AuthPage() {
           {/* Error Message */}
           {error && (
             <div
-              className="mb-4 p-4 rounded-md text-sm"
+              className="mb-4 p-4 rounded-lg text-sm"
               style={{
                 backgroundColor: '#fee',
                 color: '#c33',
@@ -203,7 +222,7 @@ export default function AuthPage() {
           {/* Success Message */}
           {success && (
             <div
-              className="mb-4 p-4 rounded-md text-sm"
+              className="mb-4 p-4 rounded-lg text-sm"
               style={{
                 backgroundColor: '#efe',
                 color: '#3c3',
@@ -229,7 +248,7 @@ export default function AuthPage() {
                   name="email"
                   required
                   disabled={loading}
-                  className="w-full px-4 py-2 rounded-md border"
+                  className="w-full px-4 py-2.5 rounded-lg border"
                   style={{
                     borderColor: colors.border,
                     backgroundColor: colors.surface,
@@ -250,7 +269,7 @@ export default function AuthPage() {
                   name="password"
                   required
                   disabled={loading}
-                  className="w-full px-4 py-2 rounded-md border"
+                  className="w-full px-4 py-2.5 rounded-lg border"
                   style={{
                     borderColor: colors.border,
                     backgroundColor: colors.surface,
@@ -262,7 +281,7 @@ export default function AuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2 rounded-md font-medium transition-all active:scale-95 cursor-pointer hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full py-2.5 rounded-lg font-medium transition-all active:scale-95 cursor-pointer hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{
                   backgroundColor: colors.accentCherry,
                   color: 'white',
@@ -288,7 +307,7 @@ export default function AuthPage() {
                   name="name"
                   required
                   disabled={loading}
-                  className="w-full px-4 py-2 rounded-md border"
+                  className="w-full px-4 py-2.5 rounded-lg border"
                   style={{
                     borderColor: colors.border,
                     backgroundColor: colors.surface,
@@ -309,7 +328,7 @@ export default function AuthPage() {
                   name="email"
                   required
                   disabled={loading}
-                  className="w-full px-4 py-2 rounded-md border"
+                  className="w-full px-4 py-2.5 rounded-lg border"
                   style={{
                     borderColor: colors.border,
                     backgroundColor: colors.surface,
@@ -330,7 +349,7 @@ export default function AuthPage() {
                   name="password"
                   required
                   disabled={loading}
-                  className="w-full px-4 py-2 rounded-md border"
+                  className="w-full px-4 py-2.5 rounded-lg border"
                   style={{
                     borderColor: colors.border,
                     backgroundColor: colors.surface,
@@ -354,7 +373,7 @@ export default function AuthPage() {
                   name="confirmPassword"
                   required
                   disabled={loading}
-                  className="w-full px-4 py-2 rounded-md border"
+                  className="w-full px-4 py-2.5 rounded-lg border"
                   style={{
                     borderColor: colors.border,
                     backgroundColor: colors.surface,
@@ -366,7 +385,7 @@ export default function AuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2 rounded-md font-medium transition-all active:scale-95 cursor-pointer hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full py-2.5 rounded-lg font-medium transition-all active:scale-95 cursor-pointer hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{
                   backgroundColor: colors.accentCherry,
                   color: 'white',
@@ -397,7 +416,7 @@ export default function AuthPage() {
             onClick={handleGoogleSignIn}
             disabled={loading}
             type="button"
-            className="w-full py-2 rounded-md font-medium transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
             style={{
               backgroundColor: colors.surface,
               color: colors.textPrimary,

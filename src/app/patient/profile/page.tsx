@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { colors } from '@/lib/constants';
 import { Edit2, Plus, Trash2, Save, AlertCircle } from 'lucide-react';
+import Card from '@/components/shared/Card';
+import PrimaryButton from '@/components/shared/PrimaryButton';
+import SectionHeader from '@/components/shared/SectionHeader';
 
 interface PatientProfile {
   id: string;
@@ -134,10 +137,16 @@ export default function ProfilePage() {
     try {
       // If editing existing profile
       if (editingId) {
+        const formattedData = {
+          ...editData,
+          dateOfBirth: editData.dateOfBirth
+            ? new Date(editData.dateOfBirth)
+            : undefined,
+        };
         const res = await fetch(`/api/profiles/${editingId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(editData),
+          body: JSON.stringify(formattedData),
         });
 
         if (res.ok) {
@@ -168,10 +177,16 @@ export default function ProfilePage() {
     }
 
     try {
+      const formattedData = {
+        ...editData,
+        dateOfBirth: editData.dateOfBirth
+          ? new Date(editData.dateOfBirth)
+          : undefined,
+      };
       const res = await fetch('/api/profiles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editData),
+        body: JSON.stringify(formattedData),
       });
 
       if (res.ok) {
@@ -204,21 +219,13 @@ export default function ProfilePage() {
 
   return (
     <div className="px-4 py-6 md:px-8 md:py-8 max-w-4xl mx-auto">
-      <h1
-        style={{ color: colors.textPrimary, fontFamily: '"Noto Serif JP", serif' }}
-        className="text-3xl mb-2"
-      >
-        Profile & Settings
-      </h1>
-      <p style={{ color: colors.textSecondary }} className="mb-6">
-        Manage your profile and family members
-      </p>
+      <SectionHeader
+        title="Profile & Settings"
+        subtitle="Manage your profile and family members"
+      />
 
       {/* Account Info */}
-      <div
-        className="p-4 rounded-lg border mb-6"
-        style={{ backgroundColor: colors.surface, borderColor: colors.border }}
-      >
+      <Card className="p-4 rounded-xl mb-6">
         <h2 style={{ color: colors.textPrimary }} className="font-semibold mb-4">
           Account Information
         </h2>
@@ -240,7 +247,7 @@ export default function ProfilePage() {
             </p>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Patient Profiles */}
       <div className="mb-6">
@@ -248,17 +255,12 @@ export default function ProfilePage() {
           <h2 style={{ color: colors.textPrimary }} className="text-xl font-semibold">
             Medical Profiles
           </h2>
-          <button
+          <PrimaryButton
             onClick={() => setShowAddForm(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium"
-            style={{
-              backgroundColor: colors.accentCherry,
-              color: 'white',
-            }}
           >
             <Plus size={16} />
             Add Family Member
-          </button>
+          </PrimaryButton>
         </div>
 
         {loading ? (
@@ -266,18 +268,15 @@ export default function ProfilePage() {
             <p style={{ color: colors.textSecondary }}>Loading profiles...</p>
           </div>
         ) : profiles.length === 0 ? (
-          <div
-            className="text-center py-8 rounded-lg"
-            style={{ backgroundColor: colors.surface }}
-          >
+          <Card className="text-center py-8 rounded-xl">
             <p style={{ color: colors.textSecondary }}>No profiles yet</p>
-          </div>
+          </Card>
         ) : (
           <div className="space-y-4">
             {profiles.map((profile) => (
-              <div
+              <Card
                 key={profile.id}
-                className="p-4 rounded-lg border"
+                className="p-4 rounded-xl border"
                 style={{
                   backgroundColor: colors.surface,
                   borderColor: colors.border,
@@ -583,21 +582,18 @@ export default function ProfilePage() {
 
                     {/* Action Buttons */}
                     <div className="flex gap-2 pt-4 border-t" style={{ borderColor: colors.border }}>
-                      <button
+                      <PrimaryButton
                         onClick={handleSave}
-                        className="flex items-center gap-2 px-4 py-2 rounded-md font-medium"
-                        style={{ backgroundColor: colors.accentCherry, color: 'white' }}
                       >
                         <Save size={16} />
                         Save
-                      </button>
-                      <button
+                      </PrimaryButton>
+                      <PrimaryButton
                         onClick={() => setEditingId(null)}
-                        className="px-4 py-2 rounded-md border font-medium"
-                        style={{ borderColor: colors.border, color: colors.textSecondary }}
+                        variant="secondary"
                       >
                         Cancel
-                      </button>
+                      </PrimaryButton>
                     </div>
                   </div>
                 ) : (
@@ -620,26 +616,21 @@ export default function ProfilePage() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <button
+                        <PrimaryButton
                           onClick={() => handleEdit(profile)}
-                          className="p-2 rounded-md transition-all"
-                          style={{
-                            backgroundColor: colors.surface,
-                            color: colors.accentCherry,
-                          }}
+                          variant="secondary"
+                          className="h-9 w-9 min-h-0 rounded-lg p-0"
                         >
                           <Edit2 size={16} />
-                        </button>
-                        <button
+                        </PrimaryButton>
+                        <PrimaryButton
                           onClick={() => handleDelete(profile.id)}
-                          className="p-2 rounded-md transition-all"
-                          style={{
-                            backgroundColor: colors.surface,
-                            color: '#ef4444',
-                          }}
+                          variant="secondary"
+                          className="h-9 w-9 min-h-0 rounded-lg p-0"
+                          style={{ color: '#ef4444' }}
                         >
                           <Trash2 size={16} />
-                        </button>
+                        </PrimaryButton>
                       </div>
                     </div>
                     
@@ -681,7 +672,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </Card>
             ))}
           </div>
         )}
@@ -689,10 +680,7 @@ export default function ProfilePage() {
 
       {/* Add New Profile Form */}
       {showAddForm && (
-        <div
-          className="p-6 rounded-lg border"
-          style={{ backgroundColor: colors.surface, borderColor: colors.border }}
-        >
+        <Card className="p-6 rounded-xl border">
           <h3 style={{ color: colors.textPrimary }} className="font-semibold text-lg mb-6">
             Add New Family Member
           </h3>
@@ -1003,29 +991,26 @@ export default function ProfilePage() {
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4 border-t" style={{ borderColor: colors.border }}>
-              <button
+              <PrimaryButton
                 onClick={() => {
                   handleAddNewProfile();
                 }}
-                className="flex items-center gap-2 px-6 py-2 rounded-md font-medium"
-                style={{ backgroundColor: colors.accentCherry, color: 'white' }}
               >
                 <Plus size={16} />
                 Add Member
-              </button>
-              <button
+              </PrimaryButton>
+              <PrimaryButton
                 onClick={() => {
                   setShowAddForm(false);
                   setEditData({});
                 }}
-                className="px-6 py-2 rounded-md border font-medium"
-                style={{ borderColor: colors.border, color: colors.textSecondary }}
+                variant="secondary"
               >
                 Cancel
-              </button>
+              </PrimaryButton>
             </div>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

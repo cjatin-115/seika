@@ -24,7 +24,22 @@ export default function SuperAdminLayout({
   }, [status, userRole, router]);
 
   if (status === 'loading' || userRole !== 'SUPER_ADMIN') {
-    return <div>Loading...</div>;
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: colors.background }}
+      >
+        <div className="soft-card px-6 py-5 text-center">
+          <div
+            className="w-10 h-10 mx-auto mb-3 rounded-full border-4 border-transparent animate-spin"
+            style={{ borderTopColor: colors.accentCherry }}
+          />
+          <p style={{ color: colors.textSecondary }} className="text-sm">
+            Preparing your workspace...
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -55,7 +70,7 @@ export default function SuperAdminLayout({
           <div className="p-4 border-t" style={{ borderColor: colors.border }}>
             <button
               onClick={() => signOut({ redirect: true, callbackUrl: '/auth' })}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-white"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-white shadow-sm"
               style={{ backgroundColor: colors.accentCherry }}
             >
               <LogOut size={16} />
@@ -81,8 +96,8 @@ export default function SuperAdminLayout({
 function NavItem({ label }: { label: string }) {
   return (
     <div
-      className="px-4 py-3 rounded-md text-sm"
-      style={{ color: colors.textSecondary }}
+      className="px-4 py-3 rounded-lg text-sm cursor-pointer hover:translate-x-0.5"
+      style={{ color: colors.textSecondary, backgroundColor: 'transparent' }}
     >
       {label}
     </div>

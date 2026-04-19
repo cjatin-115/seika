@@ -8,6 +8,11 @@ const redisUrl = process.env.REDIS_URL && !process.env.REDIS_URL.includes('defau
 const globalForRedis = (global as any) as { redis: ReturnType<typeof Redis.createClient> | null };
 
 let redis = globalForRedis.redis;
+let connectPromise: Promise<void> | null = null;
+let lastConnectFailureAt = 0;
+let lastConnectFailureMessage = '';
+const CONNECT_TIMEOUT_MS = 300;
+const FAILURE_BACKOFF_MS = 10_000;
 
 if (!redis) {
   try {
@@ -27,8 +32,38 @@ export const getRedis = async () => {
     throw new Error('Redis client not initialized');
   }
   try {
-    if (!redis?.isOpen) {
-      await redis?.connect();
+    const now = Date.now();
+    if (!redis.isOpen) {
+      // Avoid hanging requests when Redis is down (common in local dev).
+      if (now - lastConnectFailureAt < FAILURE_BACKOFF_MS) {
+        throw new Error(
+          lastConnectFailureMessage || 'Redis unavailable (recent connection failure)'
+        );
+      }
+
+      if (!connectPromise) {
+        connectPromise = Promise.race([
+          redis.connect(),
+          new Promise<void>((_, reject) =>
+            setTimeout(() => reject(new Error('Redis connect timed out')), CONNECT_TIMEOUT_MS)
+          ),
+        ])
+          .then(() => {
+            lastConnectFailureAt = 0;
+            lastConnectFailureMessage = '';
+          })
+          .catch((err) => {
+            lastConnectFailureAt = Date.now();
+            lastConnectFailureMessage =
+              err instanceof Error ? err.message : 'Redis connect failed';
+            throw err;
+          })
+          .finally(() => {
+            connectPromise = null;
+          });
+      }
+
+      await connectPromise;
     }
     return redis;
   } catch (err) {

@@ -4,9 +4,85 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { createAppointmentSchema } from '@/lib/validations';
 import { successResponse, errorResponse, handleError, AppError } from '@/lib/utils/errors';
-import { lockSlot, generateDoctorSlots, getNextAvailableSlot } from '@/lib/slots';
+import { lockSlot } from '@/lib/slots';
 import { sendEmail, getAppointmentConfirmationEmail } from '@/lib/notifications';
-import { format } from 'date-fns';
+import { format, startOfDay, endOfDay } from 'date-fns';
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('Timed out')), timeoutMs)
+    ),
+  ]);
+}
+
+async function isSlotAvailableForDoctor(args: {
+  doctorId: string;
+  date: Date;
+  slotTime: string;
+}): Promise<{ ok: true; schedule: { maxPatientsPerSlot: number } } | { ok: false; code: string; message: string }> {
+  const { doctorId, date, slotTime } = args;
+  const dayOfWeek = date.getDay();
+
+  const schedule = await prisma.doctorSchedule.findUnique({
+    where: {
+      doctorId_dayOfWeek: {
+        doctorId,
+        dayOfWeek,
+      },
+    },
+    select: {
+      isActive: true,
+      startTime: true,
+      endTime: true,
+      maxPatientsPerSlot: true,
+    },
+  });
+
+  if (!schedule || !schedule.isActive) {
+    return { ok: false, code: 'NO_SCHEDULE', message: 'No schedule available for selected date' };
+  }
+
+  // Check if doctor is on leave that day
+  const leave = await prisma.doctorLeave.findFirst({
+    where: {
+      doctorId,
+      startDate: { lte: date },
+      endDate: { gte: date },
+    },
+    select: { id: true },
+  });
+  if (leave) {
+    return { ok: false, code: 'DOCTOR_ON_LEAVE', message: 'Doctor is not available on this date' };
+  }
+
+  // Quick time-window check (lexicographic works for HH:mm)
+  if (slotTime < schedule.startTime || slotTime >= schedule.endTime) {
+    return { ok: false, code: 'OUTSIDE_HOURS', message: 'Selected slot is outside doctor working hours' };
+  }
+
+  // Count existing bookings for this exact slot on that calendar day
+  const dayStart = startOfDay(date);
+  const dayEnd = endOfDay(date);
+  const count = await prisma.appointment.count({
+    where: {
+      doctorId,
+      appointmentDate: {
+        gte: dayStart,
+        lte: dayEnd,
+      },
+      slotTime,
+      status: { in: ['CONFIRMED', 'PENDING'] },
+    },
+  });
+
+  if (count >= schedule.maxPatientsPerSlot) {
+    return { ok: false, code: 'SLOT_NOT_AVAILABLE', message: 'Selected slot is not available' };
+  }
+
+  return { ok: true, schedule: { maxPatientsPerSlot: schedule.maxPatientsPerSlot } };
+}
 
 /**
  * GET /api/appointments - Get appointments for current user
@@ -107,14 +183,13 @@ export async function POST(req: NextRequest) {
 
     // Check if slot is available
     const date = new Date(validData.appointmentDate);
-    const slots = await generateDoctorSlots(validData.doctorId, date);
-    const slot = slots.find((s) => s.time === validData.slotTime);
-
-    if (!slot || !slot.available) {
-      return NextResponse.json(
-        errorResponse('SLOT_NOT_AVAILABLE', 'Selected slot is not available'),
-        { status: 400 }
-      );
+    const availability = await isSlotAvailableForDoctor({
+      doctorId: validData.doctorId,
+      date,
+      slotTime: validData.slotTime,
+    });
+    if (!availability.ok) {
+      return NextResponse.json(errorResponse(availability.code, availability.message), { status: 400 });
     }
 
     // Lock the slot
@@ -173,11 +248,17 @@ export async function POST(req: NextRequest) {
         appointmentId: appointment.id,
       });
 
-      await sendEmail({
-        to: session.user.email || '',
-        subject: 'Appointment Confirmed - MediBook',
-        html: emailHtml,
-      });
+      const to = session.user.email || '';
+      if (to) {
+        await withTimeout(
+          sendEmail({
+            to,
+            subject: 'Appointment Confirmed - MediBook',
+            html: emailHtml,
+          }),
+          2500
+        );
+      }
     } catch (emailError) {
       console.error('Failed to send confirmation email:', emailError);
       // Don't fail the appointment creation if email fails

@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { colors } from '@/lib/constants';
 import { Calendar, Clock, MapPin, User } from 'lucide-react';
+import Card from '@/components/shared/Card';
+import PrimaryButton from '@/components/shared/PrimaryButton';
+import SectionHeader from '@/components/shared/SectionHeader';
 
 interface Appointment {
   id: string;
@@ -69,55 +72,47 @@ export default function AppointmentsPage() {
 
   return (
     <div className="px-4 py-6 md:px-8 md:py-8 max-w-4xl mx-auto">
-      <h1
-        style={{ color: colors.textPrimary, fontFamily: '"Noto Serif JP", serif' }}
-        className="text-3xl mb-6"
-      >
-        My Appointments
-      </h1>
+      <SectionHeader title="My Appointments" subtitle="Track upcoming and past visits" />
 
       {/* Filter Tabs */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {['all', 'upcoming', 'completed', 'cancelled'].map((status) => (
-          <button
+          <PrimaryButton
             key={status}
             onClick={() => setFilter(status as any)}
-            className="px-4 py-2 rounded-md text-sm font-medium transition-all capitalize"
+            variant={filter === status ? 'primary' : 'secondary'}
+            className="capitalize"
             style={{
-              backgroundColor: filter === status ? colors.accentCherry : colors.surface,
-              color: filter === status ? 'white' : colors.textSecondary,
-              border: `1px solid ${colors.border}`,
+              paddingInline: '1rem',
+              paddingBlock: '0.625rem',
             }}
           >
             {status}
-          </button>
+          </PrimaryButton>
         ))}
       </div>
 
       {/* Appointments List */}
       {loading ? (
-        <div className="text-center py-12">
+        <Card className="text-center py-12 rounded-xl">
           <div
             className="w-12 h-12 border-4 border-transparent rounded-full animate-spin mx-auto mb-4"
             style={{ borderTopColor: colors.accentCherry }}
           ></div>
           <p style={{ color: colors.textSecondary }}>Loading appointments...</p>
-        </div>
+        </Card>
       ) : filteredAppointments.length === 0 ? (
-        <div
-          className="text-center py-12 rounded-lg"
-          style={{ backgroundColor: colors.surface }}
-        >
+        <Card className="text-center py-12 rounded-xl">
           <p style={{ color: colors.textSecondary }}>
             No {filter !== 'all' ? filter : ''} appointments yet.
           </p>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-4">
           {filteredAppointments.map((appointment) => (
-            <div
+            <Card
               key={appointment.id}
-              className="p-4 rounded-lg border"
+              className="p-4 rounded-xl border"
               style={{
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
@@ -169,25 +164,19 @@ export default function AppointmentsPage() {
                 {/* Status Badge */}
                 <div className="flex flex-col items-start md:items-end gap-3">
                   <div
-                    className="px-4 py-2 rounded-md text-sm font-medium text-white"
+                    className="px-4 py-2 rounded-lg text-sm font-medium text-white"
                     style={{ backgroundColor: getStatusColor(appointment.status) }}
                   >
                     {appointment.status}
                   </div>
                   {appointment.status === 'CONFIRMED' && (
-                    <button
-                      className="px-4 py-2 rounded-md text-sm font-medium transition-all"
-                      style={{
-                        backgroundColor: colors.accentCherry,
-                        color: 'white',
-                      }}
-                    >
+                    <PrimaryButton>
                       Join Video Call
-                    </button>
+                    </PrimaryButton>
                   )}
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

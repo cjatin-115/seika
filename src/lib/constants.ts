@@ -60,7 +60,7 @@ export const USER_ROLES = {
 
 // Departments with icons
 export const DEPARTMENTS = [
-  { name: 'General Medicine', icon: 'stethoscope' },
+  { name: 'General Practice', icon: 'stethoscope' },
   { name: 'Cardiology', icon: 'heart' },
   { name: 'Dermatology', icon: 'skin' },
   { name: 'Orthopedics', icon: 'bone' },
