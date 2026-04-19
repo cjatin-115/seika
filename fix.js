@@ -1,0 +1,1 @@
+const fs = require('fs'); let c = fs.readFileSync('src/app/auth/page.tsx', 'utf8'); c = c.replace(/callbackUrl: '\/dashboard'/g, 'callbackUrl: \'/\''); c = c.replace(/redirect: true/g, 'redirect: false'); fs.writeFileSync('src/app/auth/page.tsx', c);
