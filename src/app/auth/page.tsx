@@ -43,22 +43,22 @@ export default function AuthPage() {
         email,
         password,
         redirect: false,
-        callbackUrl: '/auth/callback',
       });
 
-      if (!result || (result as any).error) {
-        const raw = typeof (result as any)?.error === 'string' ? ((result as any).error as string) : '';
-        const errMsg =
-          raw && raw !== 'CredentialsSignin'
-            ? raw
-            : 'Invalid email or password';
+      console.log('Sign in result:', result);
+
+      // Check if sign-in was successful
+      if (!result || result.error || !result.ok) {
+        const raw = result?.error || 'Invalid email or password';
+        const errMsg = raw !== 'CredentialsSignin' ? raw : 'Invalid email or password';
         setError(errMsg);
         setLoading(false);
         return;
       }
 
-      // Hard navigation ensures server components (like /auth/callback) see the session cookie immediately.
-      window.location.assign('/auth/callback');
+      // Hard navigation ensures server components see the session cookie immediately
+      console.log('Sign in successful, redirecting to callback...');
+      window.location.href = '/auth/callback';
     } catch (err) {
       console.error('Sign in exception:', err);
       setError('Authentication failed. Please try again.');

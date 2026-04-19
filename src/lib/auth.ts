@@ -123,7 +123,7 @@ export const authOptions: NextAuthOptions = {
     signIn: '/auth',
   },
   session: {
-    strategy: 'database',
+    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60, // 24 hours
   },
